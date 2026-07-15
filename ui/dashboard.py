@@ -333,7 +333,7 @@ class SecurityDashboard:
             "padx": 8, "pady": 3,
         }
 
-        tk.Button(hdr_row, text="📋 Copy", fg=COLORS["accent"],
+        tk.Button(hdr_row, text="📁 Copy", fg=COLORS["accent"],
                   command=self._copy_detail, **btn_style).pack(side="right", padx=2)
 
         tk.Button(hdr_row, text="✅ Bo qua", fg=COLORS["green"],
@@ -342,8 +342,26 @@ class SecurityDashboard:
         tk.Button(hdr_row, text="🔒 Block mang", fg=COLORS["orange"],
                   command=self._block_network, **btn_style).pack(side="right", padx=2)
 
-        tk.Button(hdr_row, text="💀 Kill Process", fg=COLORS["red"],
+        tk.Button(hdr_row, text="💣 Kill Process", fg=COLORS["red"],
                   command=self._kill_process, **btn_style).pack(side="right", padx=2)
+
+        # Hàng nút 2: Chặn vĩnh viễn
+        btn_row2 = tk.Frame(detail_frame, bg=COLORS["bg2"])
+        btn_row2.pack(fill="x", padx=8, pady=(0, 4))
+
+        tk.Label(btn_row2, text="Vĩnh viễn:",
+                 bg=COLORS["bg2"], fg=COLORS["text_dim"],
+                 font=("Segoe UI", 8), anchor="w").pack(side="left")
+
+        tk.Button(btn_row2, text="🗑️ Xóa File khỏi đĩa",
+                  fg="#ff4444",
+                  command=self._delete_file_permanent,
+                  **btn_style).pack(side="right", padx=2)
+
+        tk.Button(btn_row2, text="⛔ Chặn Vĩnh Viễn (Firewall+SRP+Startup)",
+                  fg="#ff6b35",
+                  command=self._block_permanent,
+                  **btn_style).pack(side="right", padx=2)
 
         tk.Frame(detail_frame, bg=COLORS["border"], height=1).pack(fill="x", padx=8)
 
@@ -530,6 +548,64 @@ class SecurityDashboard:
             self._detail_text.delete("1.0", "end")
             self._detail_text.configure(state="disabled")
             self._status_var.set("  Da bo qua canh bao.")
+
+    def _delete_file_permanent(self):
+        """Xóa vĩnh viễn file thực thi khỏi đĩa (xóa triệt để)"""
+        if not self._selected_alert:
+            return
+        
+        proc = self._selected_alert.get("process", {})
+        pid = proc.get("pid") if isinstance(proc, dict) else self._selected_alert.get("pid")
+        file_path = self._selected_alert.get("file_path") or (proc.get("exe") if isinstance(proc, dict) else None)
+        process_name = self._selected_alert.get("process_name") or (proc.get("name") if isinstance(proc, dict) else "Unknown")
+        
+        if not file_path:
+            self._status_var.set("  Khong co duong dan file de xoa.")
+            return
+            
+        import tkinter.messagebox as messagebox
+        if not messagebox.askyesno("Xác nhận xóa", f"Bạn có chắc chắn muốn XÓA VĨNH VIỄN file này không?\n\nFile: {file_path}\n\nHành động này không thể hoàn tác!"):
+            return
+            
+        try:
+            from monitor.permanent_block import block_permanently
+            result = block_permanently(file_path, process_name, pid=pid, delete_file=True)
+            self._status_var.set(f"  DA XOA VINH VIEN: {process_name}")
+            # Hiển thị kết quả
+            self._detail_text.configure(state="normal")
+            self._detail_text.insert("1.0", f"\n{result}\n\n")
+            self._detail_text.configure(state="disabled")
+        except Exception as e:
+            self._status_var.set(f"  Loi xoa file: {e}")
+
+    def _block_permanent(self):
+        """Chặn vĩnh viễn bằng Firewall, SRP, xóa Startup và Defender"""
+        if not self._selected_alert:
+            return
+            
+        proc = self._selected_alert.get("process", {})
+        pid = proc.get("pid") if isinstance(proc, dict) else self._selected_alert.get("pid")
+        file_path = self._selected_alert.get("file_path") or (proc.get("exe") if isinstance(proc, dict) else None)
+        process_name = self._selected_alert.get("process_name") or (proc.get("name") if isinstance(proc, dict) else "Unknown")
+        
+        if not file_path:
+            self._status_var.set("  Khong co duong dan file de chan.")
+            return
+            
+        import tkinter.messagebox as messagebox
+        if not messagebox.askyesno("Xác nhận chặn vĩnh viễn", f"Bạn có chắc chắn muốn CHẶN VĨNH VIỄN phần mềm này?\n\nQuá trình sẽ:\n- Chặn bằng Firewall\n- Chặn thực thi bằng SRP (Registry)\n- Gỡ bỏ khỏi danh sách Startup\n- Báo cáo cho Windows Defender\n\nTiến trình: {process_name}"):
+            return
+            
+        try:
+            from monitor.permanent_block import block_permanently
+            result = block_permanently(file_path, process_name, pid=pid, delete_file=False)
+            self._status_var.set(f"  DA CHAN VINH VIEN: {process_name}")
+            # Hiển thị kết quả
+            self._detail_text.configure(state="normal")
+            self._detail_text.insert("1.0", f"\n{result}\n\n")
+            self._detail_text.configure(state="disabled")
+        except Exception as e:
+            self._status_var.set(f"  Loi chan vinh vien: {e}")
 
     def _copy_detail(self):
         """Copy nội dung chi tiết vào clipboard"""
