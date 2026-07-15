@@ -154,13 +154,23 @@ class SecurityDashboard:
             font=("Segoe UI", 10),
         ).pack(side="left")
 
+        # Nút check update
+        tk.Button(hdr,
+            text="🔄 Check Update",
+            bg=COLORS["bg3"], fg=COLORS["accent"],
+            relief="flat", activebackground=COLORS["border"],
+            cursor="hand2", font=("Segoe UI", 8, "bold"),
+            command=self._manual_check_update,
+            padx=8, pady=2
+        ).pack(side="right", padx=(0, 16))
+
         # Uptime label (bên phải)
         self._uptime_var = tk.StringVar(value="Uptime: 0s")
         tk.Label(hdr,
             textvariable=self._uptime_var,
             bg=COLORS["bg2"], fg=COLORS["text_dim"],
             font=("Segoe UI", 9),
-        ).pack(side="right", padx=16)
+        ).pack(side="right", padx=8)
 
         # Trạng thái admin
         self._admin_var = tk.StringVar(value="")
@@ -618,6 +628,35 @@ class SecurityDashboard:
             self._status_var.set("  Da copy noi dung vao clipboard!")
         except Exception:
             pass
+
+    def _manual_check_update(self):
+        """Kiểm tra cập nhật thủ công"""
+        import threading
+        self._status_var.set("  Đang kiểm tra cập nhật trên GitHub...")
+        
+        def task():
+            try:
+                from monitor.update_checker import check_for_update
+                result = check_for_update()
+                
+                def show_msg():
+                    import tkinter.messagebox as messagebox
+                    if result:
+                        msg = (f"🆕 CÓ BẢN CẬP NHẬT MỚI!\n\n"
+                               f"Phiên bản hiện tại: v{result['current']}\n"
+                               f"Phiên bản mới: v{result['latest']}\n\n"
+                               f"Chi tiết:\n{result['notes']}\n\n"
+                               f"Hãy vào GitHub tải bản mới (File .zip) và chạy lại cài_đặt.bat nhé!")
+                        messagebox.showinfo("Cập nhật phần mềm", msg)
+                    else:
+                        messagebox.showinfo("Cập nhật phần mềm", "Bạn đang sử dụng phiên bản mới nhất!\nKhông có bản cập nhật nào.")
+                    self._status_var.set("  Sẵn sàng.")
+                
+                self.root.after(0, show_msg)
+            except Exception as e:
+                self.root.after(0, lambda: self._status_var.set(f"  Lỗi kiểm tra cập nhật: {e}"))
+                
+        threading.Thread(target=task, daemon=True, name="ManualUpdateCheck").start()
 
     def _clear_alerts(self):
         for item in self._alert_tree.get_children():
