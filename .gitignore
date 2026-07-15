@@ -1,0 +1,54 @@
+# Windows Security Monitor - .gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+*.spec
+.eggs/
+
+# Virtual environments
+venv/
+.venv/
+env/
+.env/
+
+# Logs và báo cáo (không commit lên git)
+logs/
+*.log
+*.html
+
+# File tạm của PyInstaller / cx_Freeze
+SecurityMonitor.spec
+SecurityMonitor_v*.zip
+cài_đặt.bat
+build.py
+build2.py
+create_installer.py
+setup.py
+
+# Build artifacts
+build/
+dist/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Windows
+Thumbs.db
+desktop.ini
+ehthumbs.db
+
+# Dữ liệu nhạy cảm (không commit)
+*.pkl
+*.db
