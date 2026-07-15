@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Callable
 
 # ── Cấu hình ─────────────────────────────────────────
-GITHUB_REPO    = "YOUR_USERNAME/windows-security-monitor"  # Sẽ được cập nhật khi push
+GITHUB_REPO    = "NguyenTriThuc2010/windows-security-monitor"
 VERSION_FILE   = Path(__file__).parent.parent / "VERSION"
 CHECK_INTERVAL = 6 * 3600  # Kiểm tra mỗi 6 giờ
 API_URL        = f"https://api.github.com/repos/{GITHUB_REPO}/releases/latest"

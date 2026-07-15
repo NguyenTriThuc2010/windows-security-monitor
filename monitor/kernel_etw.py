@@ -46,7 +46,7 @@ class KernelETWMonitor:
         self.logger = logger
         self.is_admin = is_admin
         self.running = False
-        self.scan_interval = 3
+        self.scan_interval = 30  # PowerShell subprocess rat nang, 30s la hop ly
 
         # Cache để tránh cảnh báo lặp
         self._alerted_events = set()

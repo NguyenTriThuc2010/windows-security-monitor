@@ -116,6 +116,10 @@ class SecurityMonitorApp:
         self.alerts = []
         self.lock = threading.Lock()
         self.start_time = datetime.now()
+        # Cache chong lap canh bao: key -> datetime lan cuoi canh bao
+        self._dedup_cache: dict = {}
+        self._dedup_ttl: int = 300   # 5 phut (giay)
+
         # Khoi tao Threat Response Engine - nhan canh bao tu tat ca cac module
         self.response_engine = ThreatResponseEngine(
             alert_callback=self.add_alert,
@@ -175,18 +179,45 @@ class SecurityMonitorApp:
         console.print("\n[bold green]✅ Tất cả module đã sẵn sàng![/bold green]")
 
     def add_alert(self, alert: dict):
-        """Them canh bao moi vao danh sach va chuyen sang engine phan ung"""
+        """
+        Them canh bao moi - co chong trung lap toan cuc (TTL 5 phut).
+        Moi cap (module + type + noi dung) chi duoc canh bao toi da 1 lan moi 5 phut.
+        """
+        now = datetime.now()
+
+        # ── Tao khoa de-dup ──────────────────────────────────
+        msg_snippet = str(alert.get("message", ""))[:80]
+        dedup_key   = f"{alert.get('module','')}|{alert.get('type','')}|{msg_snippet}"
+
         with self.lock:
-            alert['timestamp'] = datetime.now().isoformat()
+            # Kiem tra TTL de-dup
+            last_seen = self._dedup_cache.get(dedup_key)
+            if last_seen and (now - last_seen).total_seconds() < self._dedup_ttl:
+                return  # Bo qua - vua canh bao cai nay trong 5 phut qua
+
+            # Ghi nhan thoi gian canh bao moi nhat
+            self._dedup_cache[dedup_key] = now
+
+            # Don dep cache cu (moi 500 entry) tranh memory leak
+            if len(self._dedup_cache) > 500:
+                cutoff = now.timestamp() - self._dedup_ttl
+                self._dedup_cache = {
+                    k: v for k, v in self._dedup_cache.items()
+                    if v.timestamp() > cutoff
+                }
+
+            alert['timestamp'] = now.isoformat()
             self.alerts.append(alert)
             self.logger.log_alert(alert)
             if len(self.alerts) > 1000:
                 self.alerts = self.alerts[-1000:]
-        # Chuyen canh bao sang ThreatResponseEngine de tinh diem va phan ung
+
+        # Chuyen canh bao sang ThreatResponseEngine
         try:
             self.response_engine.ingest_alert(alert)
         except Exception:
             pass
+
 
     def start_all_monitors(self):
         """Khởi động tất cả các monitor trong luồng riêng biệt"""

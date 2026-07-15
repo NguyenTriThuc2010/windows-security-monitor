@@ -58,7 +58,7 @@ class CrossViewDetector:
         self.logger = logger
         self.is_admin = is_admin
         self.running = False
-        self.scan_interval = 30  # Quét mỗi 30 giây
+        self.scan_interval = 120  # Quan trong: WMI rat cham, quet moi 2 phut la du
 
         self._alerted_hidden = set()
 

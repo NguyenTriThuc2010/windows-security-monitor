@@ -67,7 +67,7 @@ class KernelModuleScanner:
         self.logger = logger
         self.is_admin = is_admin
         self.running = False
-        self.scan_interval = 120  # Quét mỗi 2 phút
+        self.scan_interval = 600  # Driver kernel rat it thay doi, quet moi 10 phut la du
 
         self._known_drivers = set()   # Cache driver đã biết
         self._alerted = set()
